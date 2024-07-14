@@ -69,5 +69,12 @@ $ export PYTHONPATH=$(dirname `find /usr/lib -name bcc`):$PYTHONPATH
 # Tracepoints
 
 ``` sh
-/sys/kernel/debug/tracing/events
+# if kernel debug point does not exists, mount debugfs manually
+sudo mount -t debugfs none /sys/kernel/debug
+
+# Example: Available event list
+/sys/kernel/debug/tracing/available_events
+/sys/kernel/debug/tracing/available_filter_functions
+/sys/kernel/debug/tracing/available_filter_functions_addrs
+/sys/kernel/debug/tracing/available_tracers
 ```
