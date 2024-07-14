@@ -1,7 +1,7 @@
 
 # Development Environment
 
-## [1/3] Prepare Lima Virtual machine environment
+## [1/2] Prepare Lima Virtual machine environment
 
 ``` sh
 # lima: linux virtual machine API
@@ -29,23 +29,11 @@ paths:
   ...
 ```
 
-## [2/3] Define & Start Development VM Instance
-
-Define Machine
+## [2/2] Define & Start Development VM Instance
 
 ``` sh
-$ limactl create \
-  --name=ebpf-dev \
-  --cpus=2 \
-  --memory=2 \
-  --network lima:shared \
-  --mount $(pwd):/works:w
-```
-
-Start Machine
-
-``` sh
-$ limactl start ebpf-dev
+# Define & Start VM instance from yaml definition.
+$ ./launch.sh
 ```
 
 ## [3/3] Bootstrapping VM Instance for ebpf dev
@@ -55,26 +43,6 @@ $ limactl shell ebpf-dev
 ```
 
 # ebpf Development Environment (python, bcc)
-
-## Pyenv
-
-``` sh
-$ sudo apt install -qy \
-  build-essential \
-  libssl-dev \
-  zlib1g-dev \
-  libbz2-dev \
-  liblzma-dev \
-  libreadline-dev \
-  libsqlite3-dev \
-  wget \
-  curl \
-  llvm \
-  libncurses5-dev \
-  libncursesw5-dev \
-  xz-utils \
-  tk-dev
-```
 
 ## Python 3.11
 
