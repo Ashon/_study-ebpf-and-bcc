@@ -34,7 +34,12 @@ paths:
 Define Machine
 
 ``` sh
-$ limactl create --name=ebpf-dev --cpus=2 --memory=2 --network lima:shared
+$ limactl create \
+  --name=ebpf-dev \
+  --cpus=2 \
+  --memory=2 \
+  --network lima:shared \
+  --mount $(pwd):/works:w
 ```
 
 Start Machine

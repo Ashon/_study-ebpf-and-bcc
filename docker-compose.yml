@@ -1,5 +1,0 @@
-services:
-  tcp-monitor:
-    image: tcp-monitor
-    build:
-      context: .

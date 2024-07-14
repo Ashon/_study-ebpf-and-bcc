@@ -15,8 +15,7 @@ class TrafficMonitor(object):
         self.metrics = {}
         self.interval = interval
 
-        code = open('tcp_monitor.c').read()
-        self.program = BPF(text=code)
+        self.program = BPF(src_file='tcp_monitor.c')
         self.program.attach_kprobe(event='tcp_sendmsg', fn_name='poll_sendmsg')
         self.program.attach_kprobe(event='tcp_recvmsg', fn_name='poll_recvmsg')
 
