@@ -5,8 +5,7 @@ services:
       context: .
     privileged: true
     tty: true
-    ports:
-    - 8000:8000
+    network_mode: host
     volumes:
     - /sys/kernel/debug:/sys/kernel/debug:rw \
     - /lib/modules:/lib/modules:ro \

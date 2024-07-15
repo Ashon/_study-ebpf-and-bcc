@@ -1,7 +1,13 @@
 
 # Development Environment
 
-## [1/2] Prepare Lima Virtual machine environment
+## [1/3] Install lima
+
+``` sh
+$ brew install lima
+```
+
+## [2/3] Prepare Lima VM Shared Network
 
 ``` sh
 # lima: linux virtual machine API
@@ -29,20 +35,20 @@ paths:
   ...
 ```
 
-## [2/2] Define & Start Development VM Instance
+## [3/3] Define & Start Development VM Instance
 
 ``` sh
 # Define & Start VM instance from yaml definition.
 $ ./launch.sh
 ```
 
-## [3/3] Bootstrapping VM Instance for ebpf dev
+# ebpf Development Environment (python, bcc)
+
+## Connect to VM Instance
 
 ``` sh
 $ limactl shell ebpf-dev
 ```
-
-# ebpf Development Environment (python, bcc)
 
 ## Python 3.11
 

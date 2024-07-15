@@ -1,4 +1,4 @@
-vmType: null
+# vi:set syntax=yaml: #
 os: null
 arch: null
 
@@ -22,7 +22,9 @@ disk: 20GiB
 mounts:
 - location: "~"
   writable: false
-- location: "/Users/ashon/git/github/ashon/ebpf-on-mac/workspace"
+  # lima allows only absolute path for mount location, to edit below to pwd.
+  # it is solved when using "./launch.sh".
+- location: "<!--CHANGE_THIS_TO_ABSOLUTE_PWD-->"
   mountPoint: "/workspace"
   writable: true
 - location: "/tmp/lima"
