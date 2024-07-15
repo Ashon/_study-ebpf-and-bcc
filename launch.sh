@@ -9,4 +9,4 @@ cat ebpf-dev.tpl.yaml \
   > ./tmp/ebpf-dev.yaml
 
 echo '\n' \
-| limactl start ./tmp/ebpf-dev.yaml
+| limactl --debug start ./tmp/ebpf-dev.yaml
