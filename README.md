@@ -1,13 +1,7 @@
 
 # Development Environment
 
-## [1/3] Install lima
-
-``` sh
-$ brew install lima
-```
-
-## [2/3] Prepare Lima VM Shared Network
+## [1/2] Install lima
 
 ``` sh
 # lima: linux virtual machine API
@@ -35,7 +29,7 @@ paths:
   ...
 ```
 
-## [3/3] Define & Start Development VM Instance
+## [2/2] Define & Start Development VM Instance
 
 ``` sh
 # Define & Start VM instance from yaml definition.
@@ -50,19 +44,28 @@ $ ./launch.sh
 $ limactl shell ebpf-dev
 ```
 
-## Python 3.11
+## Prepare development environment
 
 ``` sh
+# go to project directory
+$ cd /workspace/tcp_monitor
+
+# prepare python 3.11.0 virtualenv
 $ pyenv install 3.11.0
 $ pyenv virtualenv 3.11.0 ebpf-dev
 $ pyenv local ebpf-dev
-```
 
-## bcc
-
-``` sh
+# install bcc
 $ sudo apt-get install bpfcc-tools linux-headers-$(uname -r)
 $ pip install bcc
+```
+
+## build & run container
+
+``` sh
+$ cd /workspace/tcp_monitor
+$ docker compose build
+$ docker compose up
 ```
 
 ## Hacks
@@ -83,4 +86,5 @@ sudo mount -t debugfs none /sys/kernel/debug
 /sys/kernel/debug/tracing/available_filter_functions
 /sys/kernel/debug/tracing/available_filter_functions_addrs
 /sys/kernel/debug/tracing/available_tracers
+...
 ```

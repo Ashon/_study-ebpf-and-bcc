@@ -26,6 +26,8 @@ BPF_HASH(ktime_map, u32, u64, 1);
 
 static int update_metrics(
     struct pt_regs *ctx,
+
+    // https://elixir.bootlin.com/linux/v4.6/source/include/net/sock.h#L306
     struct sock *sk,
     size_t size,
     int direction
@@ -38,6 +40,7 @@ static int update_metrics(
     struct ip_key_t ip_key = {};
     struct ip_leaf_t *ip_leaf, new_leaf = {};
 
+    // https://elixir.bootlin.com/linux/v4.6/source/include/net/sock.h#L148
     bpf_probe_read(&src_ip, sizeof(src_ip), &sk->__sk_common.skc_rcv_saddr);
     bpf_probe_read(&dst_ip, sizeof(dst_ip), &sk->__sk_common.skc_daddr);
     bpf_probe_read(&src_port, sizeof(src_port), &sk->__sk_common.skc_num);
