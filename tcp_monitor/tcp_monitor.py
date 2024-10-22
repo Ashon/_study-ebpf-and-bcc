@@ -10,6 +10,9 @@ from socket import inet_ntop
 from struct import pack
 
 
+ONE_MINITE_IN_NS = 60_000_000_000
+
+
 class TrafficMonitor(object):
     def __init__(self, interval):
         self.metrics = {}
@@ -31,7 +34,7 @@ class TrafficMonitor(object):
                 time.sleep(self.interval)
                 kernel_time = self.program['ktime_map'][ts_key].value
                 current_time = time.time_ns()
-                ts_offset = current_time - kernel_time
+                nano_offset = current_time - kernel_time
                 current_metrics = {
                     'send': {},
                     'recv': {}
@@ -39,17 +42,20 @@ class TrafficMonitor(object):
 
                 for direction, bpf_hash in hashmap_dict_key_pair.items():
                     for entry, value in bpf_hash.items():
-                        ts = value.timestamp + ts_offset
-                        if current_time - ts > 60_000_000_000:
+                        ts = value.timestamp + nano_offset
+
+                        if current_time - ts > ONE_MINITE_IN_NS:
                             bpf_hash.pop(entry)
                         else:
+                            arrow = '->' if direction == 'send' else '<-'
                             src_ip = inet_ntop(
                                 AF_INET, pack('I', entry.src_ip))
                             dst_ip = inet_ntop(
                                 AF_INET, pack('I', entry.dst_ip))
                             key = (
                                 f'{src_ip}:{entry.src_port}'
-                                f'->{dst_ip}:{entry.dst_port}'
+                                f' {arrow} '
+                                f'{dst_ip}:{entry.dst_port}'
                             )
 
                             current_metrics[direction][key] = value.bytes
