@@ -24,10 +24,7 @@ class TrafficMonitor(object):
 
     def poll_metrics_from_bpf_program(self):
         ts_key = ctypes.c_uint32(0)
-        hashmap_dict_key_pair = {
-            'send': self.program['send_bytes'],
-            'recv': self.program['recv_bytes']
-        }
+        traffic_bytes = self.program['traffic_bytes']
 
         while True:
             try:
@@ -40,25 +37,24 @@ class TrafficMonitor(object):
                     'recv': {}
                 }
 
-                for direction, bpf_hash in hashmap_dict_key_pair.items():
-                    for entry, value in bpf_hash.items():
-                        ts = value.timestamp + nano_offset
+                for entry, value in traffic_bytes.items():
+                    ts = value.timestamp + nano_offset
+                    direction = 'recv' if entry.is_recv else 'send'
+                    if current_time - ts > ONE_MINITE_IN_NS:
+                        traffic_bytes.pop(entry)
+                    else:
+                        arrow = '<-' if entry.is_recv else '->'
+                        src_ip = inet_ntop(
+                            AF_INET, pack('I', entry.src_ip))
+                        dst_ip = inet_ntop(
+                            AF_INET, pack('I', entry.dst_ip))
+                        key = (
+                            f'{src_ip}:{entry.src_port}'
+                            f' {arrow} '
+                            f'{dst_ip}:{entry.dst_port}'
+                        )
 
-                        if current_time - ts > ONE_MINITE_IN_NS:
-                            bpf_hash.pop(entry)
-                        else:
-                            arrow = '->' if direction == 'send' else '<-'
-                            src_ip = inet_ntop(
-                                AF_INET, pack('I', entry.src_ip))
-                            dst_ip = inet_ntop(
-                                AF_INET, pack('I', entry.dst_ip))
-                            key = (
-                                f'{src_ip}:{entry.src_port}'
-                                f' {arrow} '
-                                f'{dst_ip}:{entry.dst_port}'
-                            )
-
-                            current_metrics[direction][key] = value.bytes
+                        current_metrics[direction][key] = value.bytes
                 self.metrics = current_metrics
 
             except KeyboardInterrupt:

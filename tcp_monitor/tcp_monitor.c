@@ -11,70 +11,80 @@ struct ip_key_t {
     u32 dst_ip;
     u16 src_port;
     u16 dst_port;
-};
+    u8 is_recv;
+} __attribute__((aligned(8)));
 
-struct ip_leaf_t {
+struct ip_value_t {
     u64 bytes;
     u64 timestamp;
-};
+} __attribute__((aligned(8)));
 
-BPF_HASH(send_bytes, struct ip_key_t, struct ip_leaf_t, MAX_ENTRIES);
-BPF_HASH(recv_bytes, struct ip_key_t, struct ip_leaf_t, MAX_ENTRIES);
+// https://elixir.bootlin.com/linux/v4.6/source/include/net/sock.h#L148
+struct __sock_common {
+    union {
+        __addrpair skc_addrpair;
+        struct {
+            __be32 skc_daddr;
+            __be32 skc_rcv_saddr;
+        };
+    };
+    union  {
+        unsigned int skc_hash;
+        __u16 skc_u16hashes[2];
+    };
+    /* skc_dport && skc_num must be grouped as well */
+    union {
+        __portpair skc_portpair;
+        struct {
+            __be16 skc_dport;
+            __u16 skc_num;
+        };
+    };
+} __attribute__((preserve_access_index));
+
+BPF_HASH(traffic_bytes, struct ip_key_t, struct ip_value_t, MAX_ENTRIES);
 
 // kernel time map for calculating the time drift with python monitor app
 BPF_HASH(ktime_map, u32, u64, 1);
 
-static int update_metrics(
+static __always_inline int update_metrics(
     struct pt_regs *ctx,
 
     // https://elixir.bootlin.com/linux/v4.6/source/include/net/sock.h#L306
     struct sock *sk,
     size_t size,
-    int direction
+    bool is_recv
 ) {
     if (sk == NULL)
         return 0;
 
-    u32 src_ip = 0, dst_ip = 0;
-    u16 src_port = 0, dst_port = 0;
-    struct ip_key_t ip_key = {};
-    struct ip_leaf_t *ip_leaf, new_leaf = {};
+    struct ip_key_t key = {};
 
-    // https://elixir.bootlin.com/linux/v4.6/source/include/net/sock.h#L148
-    bpf_probe_read(&src_ip, sizeof(src_ip), &sk->__sk_common.skc_rcv_saddr);
-    bpf_probe_read(&dst_ip, sizeof(dst_ip), &sk->__sk_common.skc_daddr);
-    bpf_probe_read(&src_port, sizeof(src_port), &sk->__sk_common.skc_num);
-    bpf_probe_read(&dst_port, sizeof(dst_port), &sk->__sk_common.skc_dport);
+    struct __sock_common sk_data = {};
 
-    ip_key.src_ip = src_ip;
-    ip_key.dst_ip = dst_ip;
-    ip_key.src_port = src_port;
-    ip_key.dst_port = bpf_ntohs(dst_port);
+    bpf_probe_read(&sk_data, sizeof(sk_data), &sk->__sk_common);
 
-    u32 key = 0;
+    key.src_ip = sk_data.skc_rcv_saddr;
+    key.dst_ip = sk_data.skc_daddr;
+    key.src_port = sk_data.skc_num;
+    key.dst_port = bpf_ntohs(sk_data.skc_dport);
+    key.is_recv = is_recv;
+
+    u32 zero = 0;
     u64 ts = bpf_ktime_get_ns();
-    ktime_map.update(&key, &ts);
+    ktime_map.update(&zero, &ts);
 
-    if (direction == 0) {
-        ip_leaf = send_bytes.lookup(&ip_key);
-        if (ip_leaf) {
-            lock_xadd(&ip_leaf->bytes, size);
-            ip_leaf->timestamp = ts;
-        } else {
-            new_leaf.bytes = size;
-            new_leaf.timestamp = ts;
-            send_bytes.update(&ip_key, &new_leaf);
-        }
+    struct ip_value_t *ip_value = traffic_bytes.lookup(&key);
+
+    if (ip_value) {
+        lock_xadd(&ip_value->bytes, size);
+        ip_value->timestamp = ts;
     } else {
-        ip_leaf = recv_bytes.lookup(&ip_key);
-        if (ip_leaf) {
-            lock_xadd(&ip_leaf->bytes, size);
-            ip_leaf->timestamp = ts;
-        } else {
-            new_leaf.bytes = size;
-            new_leaf.timestamp = ts;
-            recv_bytes.update(&ip_key, &new_leaf);
-        }
+        struct ip_value_t new_leaf = {
+            .bytes = size,
+            .timestamp = ts
+        };
+        traffic_bytes.update(&key, &new_leaf);
     }
 
     return 0;
@@ -86,7 +96,7 @@ int poll_sendmsg(
     struct msghdr *msg,
     size_t size
 ) {
-    return update_metrics(ctx, sk, size, 0);
+    return update_metrics(ctx, sk, size, false);
 }
 
 int poll_recvmsg(
@@ -96,5 +106,5 @@ int poll_recvmsg(
     int flags,
     size_t len
 ) {
-    return update_metrics(ctx, sk, len, 1);
+    return update_metrics(ctx, sk, len, true);
 }
