@@ -18,7 +18,7 @@ $ vi ~/.lima/_config/networks.yaml
 fix `socketVMNet` path correctly
 
 ``` sh
-$ readlink -f $(which socket_vmnet)
+$ find /opt -name socket_vmnet -type f -perm +111
 "{{ this is socket_vmnet path }}"
 ```
 
